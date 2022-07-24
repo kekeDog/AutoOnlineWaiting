@@ -9,7 +9,7 @@ from selenium.webdriver.support.ui import Select
 driverPath = 'chromedriver'
 
 options = webdriver.ChromeOptions()
-#options.add_argument('headless')
+options.add_argument('headless')
 options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
 options.add_experimental_option('useAutomationExtension', False)
 options.add_experimental_option("prefs", {
