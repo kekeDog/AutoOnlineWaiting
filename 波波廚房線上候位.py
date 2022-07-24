@@ -43,7 +43,7 @@ IsFillInformationSuccess = False  # 是否填寫資訊成功
 Name = "柯閔翔"
 Sex = '0'
 Phone = "0977533306"
-People = '8'
+People = '10'
 
 timeout = WebDriverWait(driver, 3)
 start = time.time()
