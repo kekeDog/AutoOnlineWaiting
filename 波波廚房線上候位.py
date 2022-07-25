@@ -1,20 +1,35 @@
 import time
 from tokenize import Name
 from typing import final
+from xmlrpc.client import DateTime
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
+import logging
+import os
+import os.path
 driverPath = 'chromedriver'
 
+root_logger = logging.getLogger()
+if not os.path.exists("logs/"):
+    os.makedirs("logs/")
+root_logger.setLevel(logging.INFO)  # or whatever
+handler = logging.FileHandler(
+    'logs/AutoOnlineWaiting{Date}.log'.format(Date=time.strftime("%Y-%m-%d", time.localtime())), 'a', 'utf-8')  # or whatever
+formatter = logging.Formatter(
+    '%(name)s %(levelname)s %(asctime)s %(message)s')  # or whatever
+handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
+root_logger.addHandler(handler)
+
+
 options = webdriver.ChromeOptions()
-options.add_argument('headless')
-options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
+options.add_experimental_option(
+    "excludeSwitches", ["enable-automation", "enable-logging"])
 options.add_experimental_option('useAutomationExtension', False)
 options.add_experimental_option("prefs", {
                                 "profile.password_manager_enabled": False, "credentials_enable_service": False})
-#options.page_load_strategy = 'none'
 driver = webdriver.Chrome(executable_path=driverPath, chrome_options=options)
 
 driver.maximize_window()
@@ -25,7 +40,7 @@ NowTime = time.localtime()
 IsLunch = True if NowTime.tm_hour < 12 else False
 
 lunchButtonlocator = (By.NAME, 'lunchButton')  # 午餐按鈕
-dinnerButtonlocator = (By.NAME, 'dinnerButton') # 晚餐按鈕
+dinnerButtonlocator = (By.NAME, 'dinnerButton')  # 晚餐按鈕
 Buttonlocator = lunchButtonlocator if IsLunch else dinnerButtonlocator
 nameInputlocator = (By.NAME, 'nameInput')  # 輸入姓名欄位
 sexSelectorlocator = (
@@ -34,9 +49,10 @@ groupSizeSelectorlocator = (By.NAME, 'groupSizeSelector')  # 用餐人數下拉�
 nextButtonlocator = (By.NAME, 'nextButton')  # 下一步按鈕
 phoneNumberInputlocator = (By.NAME, 'phoneNumberInput')  # 輸入電話號碼
 confirmButtonlocator = (By.NAME, 'confirmButton')  # 確認候位
-
+InformationSpanlocator = (By.CLASS_NAME, 'sc-iAKWXU')  # 候位資訊
 IsOpenReservation = False  # 是否開放候位
 IsFillInformationSuccess = False  # 是否填寫資訊成功
+IsConfirmWatingSuccess = False  # 是否確認候位成功
 
 
 # 訂位資料
@@ -45,95 +61,104 @@ Sex = '0'
 Phone = "0977533306"
 People = '10'
 
-timeout = WebDriverWait(driver, 3)
+timeout = WebDriverWait(driver, 5)
 start = time.time()
 driver.get(url)
+logging.info('啟動瀏覽器')
 try:
     # 等按鈕的DOM載入完畢
     timeout.until(
         EC.element_to_be_clickable(Buttonlocator))
-    print('午餐按鈕載入完畢') if IsLunch else print('晚餐按鈕載入完畢')
+    if IsLunch:
+        logging.info('午餐按鈕載入完畢')
+    else:
+        logging.info('晚餐按鈕載入完畢')
+
     end = time.time()
-    print("執行時間：%f 秒" % (end - start))
+    logging.info("執行時間：%f 秒" % (end - start))
+
+except:
+    if IsLunch:
+        logging.error('午餐按鈕載入失敗')
+    else:
+        logging.error('晚餐按鈕載入失敗')
 
 finally:
     # 取得按鈕
     lunchButton = driver.find_element(Buttonlocator[0], Buttonlocator[1])
-    if  '（未開放）' in lunchButton.text:
-        print('現在時間：{NowTime}，未開放'.format(
-            NowTime=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        ))
+    if '（未開放）' in lunchButton.text:
+        logging.info('未開放')
     else:
-        print('現在時間：{NowTime}，開放候位'.format(
-            NowTime=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        ))
+        logging.info('開放候位')
         lunchButton.click()
-        print('現在時間：{NowTime}，點擊成功!'.format(
-            NowTime=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        ))
+        logging.info('點擊成功!')
         IsOpenReservation = True
+
 
 if IsOpenReservation:
     try:
         timeout.until(
             EC.presence_of_element_located(nextButtonlocator))  # 等按鈕的DOM載入完畢
-        print('現在時間：{NowTime}，下一步按鈕載入完畢'.format(
-            NowTime=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        ))
+        logging.info('下一步按鈕載入完畢')
         timeout.until(
             EC.presence_of_element_located(nameInputlocator))  # 等按鈕的DOM載入完畢
-        print('現在時間：{NowTime}，下一步按鈕載入完畢'.format(
-            NowTime=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        ))    
+        logging.info('輸入名字欄位載入完畢')
+    except:
+        logging.error('下一步按鈕或輸入名字欄位載入失敗')
     finally:
         nameInput = driver.find_element(
             nameInputlocator[0], nameInputlocator[1])  # 輸入姓名
         nameInput.send_keys(Name)
         if nameInput.text == Name:
-            print('現在時間：{NowTime}，姓名輸入成功'.format(
-                NowTime=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-            ))
+            logging.info('姓名輸入成功')
 
         sexSelector = Select(driver.find_element(
             sexSelectorlocator[0], sexSelectorlocator[1]))  # 選擇性別
         sexSelector.select_by_value(Sex)
-        print('現在時間：{NowTime}，性別輸入成功'.format(
-            NowTime=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        ))
+        logging.info('性別輸入成功')
 
         groupSizeSelector = Select(driver.find_element(
             groupSizeSelectorlocator[0], groupSizeSelectorlocator[1]))  # 選擇用餐人數
         groupSizeSelector.select_by_value(People)
-        print('現在時間：{NowTime}，用餐人數輸入成功'.format(
-            NowTime=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        ))
+        logging.info('用餐人數輸入成功')
 
         phoneNumberInput = driver.find_element(
             phoneNumberInputlocator[0], phoneNumberInputlocator[1])  # 輸入電話號碼
         phoneNumberInput.send_keys(Phone)
         if phoneNumberInput.text == Phone:
-            print('現在時間：{NowTime}，電話號碼輸入成功'.format(
-                NowTime=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-            ))
+            logging.info('電話號碼輸入成功')
 
         nextButton = driver.find_element(
             nextButtonlocator[0], nextButtonlocator[1])
         nextButton.click()
         IsFillInformationSuccess = True
-        print('現在時間：{NowTime}，下一步點擊成功'.format(
-            NowTime=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        ))
+        logging.info('下一步點擊成功')
 
 
 if IsFillInformationSuccess:
     try:
         timeout.until(
             EC.presence_of_element_located(confirmButtonlocator))  # 等按鈕的DOM載入完畢
-        print('現在時間：{NowTime}，確認候位載入完畢'.format(
-            NowTime=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        ))
+        logging.info('確認候位載入完畢')
+    except:
+        logging.error('確認候位載入失敗')
     finally:
         confirmButton = driver.find_element(
             confirmButtonlocator[0], confirmButtonlocator[1])  # 確認候位
         confirmButton.click()
-input('請按Enter 結束')
+        logging.info('確認候位點擊完畢')
+        IsConfirmWatingSuccess = True
+
+if IsConfirmWatingSuccess:
+    try:
+        timeout.until(
+            EC.presence_of_element_located(InformationSpanlocator))  # 等資訊的DOM載入完畢
+        logging.info('候位資訊載入完畢')
+    except:
+        logging.error('候位資訊載入失敗')
+    finally:
+        Informaition = driver.find_element(
+            InformationSpanlocator[0], InformationSpanlocator[1]).text
+        logging.info(Informaition)
+
+input("請按Enter結束")
