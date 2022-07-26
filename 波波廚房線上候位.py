@@ -1,3 +1,4 @@
+from cgi import print_arguments
 import time
 from xmlrpc.client import DateTime
 from selenium import webdriver
@@ -9,6 +10,8 @@ import logging
 import os
 import os.path
 from selenium.webdriver.common.action_chains import ActionChains
+import sys
+from pathlib import Path
 
 driverPath = 'chromedriver'
 
@@ -50,8 +53,10 @@ nextButtonlocator = (By.NAME, 'nextButton')  # 下一步按鈕
 phoneNumberInputlocator = (By.NAME, 'phoneNumberInput')  # 輸入電話號碼
 confirmButtonlocator = (By.NAME, 'confirmButton')  # 確認候位
 InformationSpanlocator = (By.CLASS_NAME, 'sc-iAKWXU')  # 候位資訊
-InformationSpanlocator = (By.XPATH, '/html/body/div[1]/div/div/div[2]/div[1]/p/span/p')  # 候位資訊
-NumberSpanlocator = (By.XPATH, '/html/body/div[1]/div/div/div[2]/div[1]/div/span/p')  # 候位序號
+InformationSpanlocator = (
+    By.XPATH, '/html/body/div[1]/div/div/div[2]/div[1]/p/span/p')  # 候位資訊
+NumberSpanlocator = (
+    By.XPATH, '/html/body/div[1]/div/div/div[2]/div[1]/div/span/p')  # 候位序號
 IsOpenReservation = False  # 是否開放候位
 IsFillInformationSuccess = False  # 是否填寫資訊成功
 IsConfirmWatingSuccess = False  # 是否確認候位成功
@@ -77,8 +82,6 @@ try:
     else:
         logging.info('晚餐按鈕載入完畢')
 
-    end = time.time()
-    logging.info("執行時間：%f 秒" % (end - start))
 
 except:
     if IsLunch:
@@ -92,16 +95,17 @@ finally:
     if '（未開放）' in lunchButton.text:
         logging.info('未開放')
         move = ActionChains(driver).move_to_element(lunchButton).perform()
-        click = driver.execute_script('arguments[0].click();',lunchButton)
-        
+        click = driver.execute_script('arguments[0].click();', lunchButton)
+
     else:
         logging.info('開放候位')
         ActionChains(driver).move_to_element(lunchButton).perform()
-        driver.execute_script('arguments[0].click();',lunchButton)
+        driver.execute_script('arguments[0].click();', lunchButton)
         lunchButton.click()
         try:
             while True:
-                lunchButton = driver.find_element(Buttonlocator[0], Buttonlocator[1])
+                lunchButton = driver.find_element(
+                    Buttonlocator[0], Buttonlocator[1])
                 lunchButton.click()
         except:
             logging.info('點擊成功!')
@@ -173,9 +177,14 @@ if IsConfirmWatingSuccess:
     except:
         logging.error('候位資訊載入失敗')
     finally:
-        Informaition = driver.find_element(InformationSpanlocator[0], InformationSpanlocator[1]).text
-        Number = driver.find_element(NumberSpanlocator[0], NumberSpanlocator[1]).text
+        Informaition = driver.find_element(
+            InformationSpanlocator[0], InformationSpanlocator[1]).text
+        Number = driver.find_element(
+            NumberSpanlocator[0], NumberSpanlocator[1]).text
         logging.info(Informaition)
         logging.info(Number)
 
+end = time.time()
+logging.info("總執行時間：%f 秒" % (end - start))
 input("請按Enter結束")
+sys.exit()
