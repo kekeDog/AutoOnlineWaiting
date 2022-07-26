@@ -1,6 +1,4 @@
 import time
-from tokenize import Name
-from typing import final
 from xmlrpc.client import DateTime
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
@@ -10,6 +8,8 @@ from selenium.webdriver.support.ui import Select
 import logging
 import os
 import os.path
+from selenium.webdriver.common.action_chains import ActionChains
+
 driverPath = 'chromedriver'
 
 root_logger = logging.getLogger()
@@ -50,6 +50,8 @@ nextButtonlocator = (By.NAME, 'nextButton')  # 下一步按鈕
 phoneNumberInputlocator = (By.NAME, 'phoneNumberInput')  # 輸入電話號碼
 confirmButtonlocator = (By.NAME, 'confirmButton')  # 確認候位
 InformationSpanlocator = (By.CLASS_NAME, 'sc-iAKWXU')  # 候位資訊
+InformationSpanlocator = (By.XPATH, '/html/body/div[1]/div/div/div[2]/div[1]/p/span/p')  # 候位資訊
+NumberSpanlocator = (By.XPATH, '/html/body/div[1]/div/div/div[2]/div[1]/div/span/p')  # 候位序號
 IsOpenReservation = False  # 是否開放候位
 IsFillInformationSuccess = False  # 是否填寫資訊成功
 IsConfirmWatingSuccess = False  # 是否確認候位成功
@@ -65,6 +67,7 @@ timeout = WebDriverWait(driver, 5)
 start = time.time()
 driver.get(url)
 logging.info('啟動瀏覽器')
+
 try:
     # 等按鈕的DOM載入完畢
     timeout.until(
@@ -88,11 +91,24 @@ finally:
     lunchButton = driver.find_element(Buttonlocator[0], Buttonlocator[1])
     if '（未開放）' in lunchButton.text:
         logging.info('未開放')
+        move = ActionChains(driver).move_to_element(lunchButton).perform()
+        click = driver.execute_script('arguments[0].click();',lunchButton)
+        
     else:
         logging.info('開放候位')
+        ActionChains(driver).move_to_element(lunchButton).perform()
+        driver.execute_script('arguments[0].click();',lunchButton)
         lunchButton.click()
-        logging.info('點擊成功!')
-        IsOpenReservation = True
+        try:
+            while True:
+                lunchButton = driver.find_element(Buttonlocator[0], Buttonlocator[1])
+                lunchButton.click()
+        except:
+            logging.info('點擊成功!')
+        finally:
+            IsOpenReservation = True
+            logging.info('點擊成功!')
+            IsOpenReservation = True
 
 
 if IsOpenReservation:
@@ -157,8 +173,9 @@ if IsConfirmWatingSuccess:
     except:
         logging.error('候位資訊載入失敗')
     finally:
-        Informaition = driver.find_element(
-            InformationSpanlocator[0], InformationSpanlocator[1]).text
+        Informaition = driver.find_element(InformationSpanlocator[0], InformationSpanlocator[1]).text
+        Number = driver.find_element(NumberSpanlocator[0], NumberSpanlocator[1]).text
         logging.info(Informaition)
+        logging.info(Number)
 
 input("請按Enter結束")
