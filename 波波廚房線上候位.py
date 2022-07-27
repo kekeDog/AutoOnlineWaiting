@@ -9,11 +9,9 @@ from selenium.webdriver.support.ui import Select
 import logging
 import os
 import os.path
-from selenium.webdriver.common.action_chains import ActionChains
 import sys
 from pathlib import Path
-from selenium.common.exceptions import NoSuchElementException
-
+from selenium.common.exceptions import NoSuchElementException, TimeoutException, StaleElementReferenceException
 
 driverPath = 'chromedriver'
 
@@ -108,7 +106,10 @@ else:
             IsOpenReservation = True
             logging.info('點擊成功!')
             pass
-
+        except StaleElementReferenceException:
+            IsOpenReservation = True
+            logging.info('點擊成功!')
+            pass
 
 if IsOpenReservation:
     try:
@@ -127,37 +128,41 @@ if IsOpenReservation:
         timeout.until(
             EC.element_to_be_clickable(nextButtonlocator))  # 等按鈕的DOM載入完畢
         logging.info('下一步按鈕載入完畢')
-    except NoSuchElementException as ex:
-        logging.error('下一步按鈕或輸入名字欄位載入失敗')
-        logging.error(ex.msg)
+    except TimeoutException as ex:
+        logging.error('欄位載入失敗')
+        logging.error(str(ex))
     else:
-        nameInput = driver.find_element(
-            nameInputlocator[0], nameInputlocator[1])  # 輸入姓名
-        nameInput.send_keys(Name)
-        if nameInput.text == Name:
-            logging.info('姓名輸入成功')
+        try:
+            nameInput = driver.find_element(
+                nameInputlocator[0], nameInputlocator[1])  # 輸入姓名
+            nameInput.send_keys(Name)
+            if nameInput.text == Name:
+                logging.info('姓名輸入成功')
 
-        sexSelector = Select(driver.find_element(
-            sexSelectorlocator[0], sexSelectorlocator[1]))  # 選擇性別
-        sexSelector.select_by_value(Sex)
-        logging.info('性別輸入成功')
+            sexSelector = Select(driver.find_element(
+                sexSelectorlocator[0], sexSelectorlocator[1]))  # 選擇性別
+            sexSelector.select_by_value(Sex)
+            logging.info('性別輸入成功')
 
-        groupSizeSelector = Select(driver.find_element(
-            groupSizeSelectorlocator[0], groupSizeSelectorlocator[1]))  # 選擇用餐人數
-        groupSizeSelector.select_by_value(People)
-        logging.info('用餐人數輸入成功')
+            groupSizeSelector = Select(driver.find_element(
+                groupSizeSelectorlocator[0], groupSizeSelectorlocator[1]))  # 選擇用餐人數
+            groupSizeSelector.select_by_value(People)
+            logging.info('用餐人數輸入成功')
 
-        phoneNumberInput = driver.find_element(
-            phoneNumberInputlocator[0], phoneNumberInputlocator[1])  # 輸入電話號碼
-        phoneNumberInput.send_keys(Phone)
-        if phoneNumberInput.text == Phone:
-            logging.info('電話號碼輸入成功')
+            phoneNumberInput = driver.find_element(
+                phoneNumberInputlocator[0], phoneNumberInputlocator[1])  # 輸入電話號碼
+            phoneNumberInput.send_keys(Phone)
+            if phoneNumberInput.text == Phone:
+                logging.info('電話號碼輸入成功')
 
-        nextButton = driver.find_element(
-            nextButtonlocator[0], nextButtonlocator[1])
-        nextButton.click()
-        IsFillInformationSuccess = True
-        logging.info('下一步點擊成功')
+            nextButton = driver.find_element(
+                nextButtonlocator[0], nextButtonlocator[1])
+            nextButton.click()
+            IsFillInformationSuccess = True
+            logging.info('下一步點擊成功')
+        except NoSuchElementException as ex:
+            logging.error('欄位載入失敗')
+            logging.error(str(ex))
 
 
 if IsFillInformationSuccess:
@@ -167,7 +172,7 @@ if IsFillInformationSuccess:
         logging.info('確認候位載入完畢')
     except NoSuchElementException as ex:
         logging.error('確認候位載入失敗')
-        logging.error(ex.msg)
+        logging.error(str(ex))
     else:
         confirmButton = driver.find_element(
             confirmButtonlocator[0], confirmButtonlocator[1])  # 確認候位
@@ -182,7 +187,7 @@ if IsConfirmWatingSuccess:
         logging.info('候位資訊載入完畢')
     except NoSuchElementException as ex:
         logging.error('候位資訊載入失敗')
-        logging.error(ex.msg)
+        logging.error(str(ex))
     else:
         Informaition = driver.find_element(
             InformationSpanlocator[0], InformationSpanlocator[1]).text
