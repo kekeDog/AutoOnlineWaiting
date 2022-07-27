@@ -12,6 +12,8 @@ import os.path
 from selenium.webdriver.common.action_chains import ActionChains
 import sys
 from pathlib import Path
+from selenium.common.exceptions import NoSuchElementException
+
 
 driverPath = 'chromedriver'
 
@@ -83,49 +85,52 @@ try:
         logging.info('晚餐按鈕載入完畢')
 
 
-except:
+except NoSuchElementException:
     if IsLunch:
         logging.error('午餐按鈕載入失敗')
     else:
         logging.error('晚餐按鈕載入失敗')
-
-finally:
+    pass
+else:
     # 取得按鈕
-    lunchButton = driver.find_element(Buttonlocator[0], Buttonlocator[1])
-    if '（未開放）' in lunchButton.text:
+    WaitButton = driver.find_element(Buttonlocator[0], Buttonlocator[1])
+    if '（未開放）' in WaitButton.text:
         logging.info('未開放')
-        move = ActionChains(driver).move_to_element(lunchButton).perform()
-        click = driver.execute_script('arguments[0].click();', lunchButton)
-
     else:
         logging.info('開放候位')
-        ActionChains(driver).move_to_element(lunchButton).perform()
-        driver.execute_script('arguments[0].click();', lunchButton)
-        lunchButton.click()
+        WaitButton.click()
         try:
-            while True:
-                lunchButton = driver.find_element(
-                    Buttonlocator[0], Buttonlocator[1])
-                lunchButton.click()
-        except:
-            logging.info('點擊成功!')
-        finally:
+            WaitButton = None
+            while not WaitButton:
+                WaitButton = driver.find_element(
+                    Buttonlocator[0], Buttonlocator[1]).click()
+        except NoSuchElementException:
             IsOpenReservation = True
             logging.info('點擊成功!')
-            IsOpenReservation = True
+            pass
 
 
 if IsOpenReservation:
     try:
         timeout.until(
-            EC.presence_of_element_located(nextButtonlocator))  # 等按鈕的DOM載入完畢
-        logging.info('下一步按鈕載入完畢')
-        timeout.until(
-            EC.presence_of_element_located(nameInputlocator))  # 等按鈕的DOM載入完畢
+            EC.presence_of_element_located(nameInputlocator))  # 等輸入名字欄位載入完畢
         logging.info('輸入名字欄位載入完畢')
-    except:
+        timeout.until(
+            EC.presence_of_element_located(sexSelectorlocator))  # 等按鈕的DOM載入完畢
+        logging.info('選擇性別欄位載入完畢')
+        timeout.until(
+            EC.presence_of_element_located(groupSizeSelectorlocator))  # 等按鈕的DOM載入完畢
+        logging.info('選擇人數欄位載入完畢')
+        timeout.until(
+            EC.presence_of_element_located(phoneNumberInputlocator))  # 等按鈕的DOM載入完畢
+        logging.info('輸入電話欄位載入完畢')
+        timeout.until(
+            EC.element_to_be_clickable(nextButtonlocator))  # 等按鈕的DOM載入完畢
+        logging.info('下一步按鈕載入完畢')
+    except NoSuchElementException as ex:
         logging.error('下一步按鈕或輸入名字欄位載入失敗')
-    finally:
+        logging.error(ex.msg)
+    else:
         nameInput = driver.find_element(
             nameInputlocator[0], nameInputlocator[1])  # 輸入姓名
         nameInput.send_keys(Name)
@@ -158,11 +163,12 @@ if IsOpenReservation:
 if IsFillInformationSuccess:
     try:
         timeout.until(
-            EC.presence_of_element_located(confirmButtonlocator))  # 等按鈕的DOM載入完畢
+            EC.element_to_be_clickable(confirmButtonlocator))  # 等按鈕的DOM載入完畢
         logging.info('確認候位載入完畢')
-    except:
+    except NoSuchElementException as ex:
         logging.error('確認候位載入失敗')
-    finally:
+        logging.error(ex.msg)
+    else:
         confirmButton = driver.find_element(
             confirmButtonlocator[0], confirmButtonlocator[1])  # 確認候位
         confirmButton.click()
@@ -174,9 +180,10 @@ if IsConfirmWatingSuccess:
         timeout.until(
             EC.presence_of_element_located(InformationSpanlocator))  # 等資訊的DOM載入完畢
         logging.info('候位資訊載入完畢')
-    except:
+    except NoSuchElementException as ex:
         logging.error('候位資訊載入失敗')
-    finally:
+        logging.error(ex.msg)
+    else:
         Informaition = driver.find_element(
             InformationSpanlocator[0], InformationSpanlocator[1]).text
         Number = driver.find_element(
