@@ -21,3 +21,7 @@ v2022.07.27.05
 - 優化 try except 去除finally
 - 檢查所有輸入欄位載入完畢
 - 錯誤會記錄哪個WebElement找不到
+
+v2022.07.27.06
+- 取得欄位改成 攔截Timeout的錯誤
+- 輸入欄位加入攔截取得不到WebElement的錯誤
